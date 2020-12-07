@@ -32,6 +32,7 @@ do
     # this also sets a temp directory on the RAID drive in case it is needed
     # this will also split forward and reverse reads if they would otherwise be
     # in a single file
+    # This solves the issue where connections time out by prefetching data in temp
     if [ ! -f "${TEMP_DIR}"/"${run_id}"/"${run_id}".sra ]
     then
             prefetch -p -O "$TEMP_DIR" "$run_id"
@@ -40,10 +41,13 @@ do
     then
         fastq-dump --split-files -L 6 --outdir "$OUTPUT_DIR" "${TEMP_DIR}"/"${run_id}"/"${run_id}".sra
     fi
-done
 
-# Remove all reverse reads for speed purposes -- for a real analysis, probably
-# would want to keep these in here, and then would also want to adjust other
-# downstream scripts as well (e.g. TrimmomaticPE instead of TrimmomaticSE, etc.)
-echo "Removing all reverse reads to make things run faster"
-rm -vf ${OUTPUT_DIR}/*_2.fastq
+    # Remove extraneous .fastq files without the "_1" forward read suffix
+    rm -vf ${OUTPUT_DIR}/"${run_id}".fastq
+
+    # Remove all reverse reads for speed purposes -- for a real analysis, probably
+    # would want to keep these in here, and then would also want to adjust other
+    # downstream scripts as well (e.g. TrimmomaticPE instead of TrimmomaticSE, etc.)
+    echo "Removing all reverse reads to make things run faster"
+    rm -vf ${OUTPUT_DIR}/*_2.fastq
+done
